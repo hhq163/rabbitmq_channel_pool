@@ -1,0 +1,2 @@
+# rabbitmq_channel_pool
+rabbitmq连接池golang实现
