@@ -110,7 +110,7 @@ func (cp *ChannelPool) Publish(exchange, key string, mandatory, immediate, relia
 }
 
 func (cp *ChannelPool) ConfirmOne(confirms <-chan amqp.Confirmation) error {
-	log.Info("waiting for confirmation of one publishing")
+	log.info("waiting for confirmation of one publishing")
 
 	if confirmed := <-confirms; confirmed.Ack {
 		log.Info("confirmed delivery with delivery tag:", confirmed.DeliveryTag)
