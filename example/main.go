@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/gpmgo/gopm/log"
+	"log"
 	"github.com/hhq163/rabbitmq_channel_pool/impl"
 	"github.com/streadway/amqp"
 )
