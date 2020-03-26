@@ -2,8 +2,8 @@ package impl
 
 import (
 	"fmt"
-	"log"
 	"sync"
+
 	"github.com/hhq163/rabbitmq_channel_pool/base"
 	"github.com/streadway/amqp"
 )

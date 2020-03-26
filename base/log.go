@@ -80,41 +80,38 @@ func LogInit(level string, buf int) error {
 	return errors.New("level must be Warn or Info.")
 }
 
-func Fatal(info ...interface{}) {
+func (log *Logger) Fatal(info ...interface{}) {
 
-	if Log.file != nil {
-		Log.file <- fmt.Sprintln("Fatal", Log.tformat(), info)
+	if log.file != nil {
+		log.file <- fmt.Sprintln("Fatal", log.tformat(), info)
 	}
 	os.Exit(1)
 }
 
 //Error 错误级别
-func Error(info ...interface{}) {
-	if Log.file != nil {
-		Log.file <- fmt.Sprintln("Error", Log.tformat(), info)
-	}
-}
-func ErrorDB(info ...interface{}) {
-	if Log.file != nil {
-		Log.file <- fmt.Sprintln("Error", Log.tformat(), info)
+func (log *Logger) Error(info ...interface{}) {
+	if log.file != nil {
+		log.file <- fmt.Sprintln("Error", log.tformat(), info)
 	}
 }
 
-func Warn(info ...interface{}) {
-	if Log.file != nil {
-		Log.file <- fmt.Sprintln("Warn", Log.tformat(), info)
+func (log *Logger) Warn(info ...interface{}) {
+	if log.file != nil {
+		log.file <- fmt.Sprintln("Warn", log.tformat(), info)
 	}
 }
-func Info(info ...interface{}) {
-	if Log.file != nil {
-		Log.file <- fmt.Sprintln("Info", Log.tformat(), info)
+func (log *Logger) Info(info ...interface{}) {
+	if log.file != nil {
+		log.file <- fmt.Sprintln("Info", log.tformat(), info)
 	}
 }
-func Close() {
-	for len(Log.file) > 0 {
+
+func (log *Logger) Close() {
+	for len(log.file) > 0 {
 		time.Sleep(1e8)
 	}
 }
+
 func format() string {
 	_, file, line, ok := runtime.Caller(2)
 	if !ok {
