@@ -110,7 +110,7 @@ func (cp *ChannelPool) Publish(exchange, key string, mandatory, immediate, relia
 }
 
 func (cp *ChannelPool) ConfirmOne(confirms <-chan amqp.Confirmation) error {
-	base.Log.info("waiting for confirmation of one publishing")
+	base.Log.Info("waiting for confirmation of one publishing")
 
 	if confirmed := <-confirms; confirmed.Ack {
 		base.Log.Info("confirmed delivery with delivery tag:", confirmed.DeliveryTag)
@@ -119,5 +119,4 @@ func (cp *ChannelPool) ConfirmOne(confirms <-chan amqp.Confirmation) error {
 		base.Log.Error("failed delivery of delivery tag:", confirmed.DeliveryTag)
 		return fmt.Errorf("failed delivery of delivery tag:", confirmed.DeliveryTag)
 	}
-
 }
