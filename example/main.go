@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"log"
+	"github.com/hhq163/rabbitmq_channel_pool/base"
 	"github.com/hhq163/rabbitmq_channel_pool/impl"
 	"github.com/streadway/amqp"
 )
@@ -18,6 +18,7 @@ type PlayerData struct {
 }
 
 func main() {
+	base.LogInit("Info", 1000)
 	channelPool := new(impl.ChannelPool)
 	channelPool.InitPool("amqp://test:testpassword@192.168.31.230:5672/test")
 
@@ -30,13 +31,13 @@ func main() {
 
 	sendCount := 0
 	for i := 1; i < 10000; i++ {
-		userData.Uid = i
+		userData.Uid = int32(i)
 
 		datas := new(bytes.Buffer)
 		enc := gob.NewEncoder(datas)
 		err := enc.Encode(userData)
 		if err != nil {
-			log.Error("Encode error")
+			base.Log.Fatal("Encode error")
 			continue
 		}
 		msg := amqp.Publishing{
@@ -50,7 +51,7 @@ func main() {
 
 		errs := channelPool.Publish("TestExchange", "testKey", false, false, false, msg)
 		if errs != nil {
-			log.Error("Failed to publish a message grid:", tf.grid, "errinfo:", err.Error())
+			base.Log.Error("Failed to publish a message i:", i, "errinfo:", err.Error())
 		}
 		sendCount++
 	}

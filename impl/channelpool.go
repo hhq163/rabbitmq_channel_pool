@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 	"sync"
-
+	"github.com/hhq163/rabbitmq_channel_pool/base"
 	"github.com/streadway/amqp"
 )
 
@@ -82,7 +82,7 @@ func (cp *ChannelPool) Publish(exchange, key string, mandatory, immediate, relia
 	}
 	if reliable {
 		if err := ch.Confirm(false); err != nil {
-			log.Error("Channel could not be put into confirm mode: %s", err)
+			base.Log.Error("Channel could not be put into confirm mode: %s", err)
 		}
 
 		confirms := ch.NotifyPublish(make(chan amqp.Confirmation, 1))
@@ -110,13 +110,13 @@ func (cp *ChannelPool) Publish(exchange, key string, mandatory, immediate, relia
 }
 
 func (cp *ChannelPool) ConfirmOne(confirms <-chan amqp.Confirmation) error {
-	log.info("waiting for confirmation of one publishing")
+	base.Log.info("waiting for confirmation of one publishing")
 
 	if confirmed := <-confirms; confirmed.Ack {
-		log.Info("confirmed delivery with delivery tag:", confirmed.DeliveryTag)
+		base.Log.Info("confirmed delivery with delivery tag:", confirmed.DeliveryTag)
 		return nil
 	} else {
-		log.Error("failed delivery of delivery tag:", confirmed.DeliveryTag)
+		base.Log.Error("failed delivery of delivery tag:", confirmed.DeliveryTag)
 		return fmt.Errorf("failed delivery of delivery tag:", confirmed.DeliveryTag)
 	}
 
