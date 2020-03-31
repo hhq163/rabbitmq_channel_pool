@@ -47,7 +47,7 @@ func main() {
 
 	util.StartWorks(10, 10000)
 
-	for i := 1; i < 1000000; i++ {
+	for i := 1; i < 10; i++ {
 		index := i
 		util.PushJob(func() {
 			userData.Uid = int32(index)
