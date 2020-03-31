@@ -35,7 +35,7 @@ func main() {
 	userData := &PlayerData{
 		Uid:        1,
 		UserName:   "testUsertestUsertestUsertestUsertestUsertestUsertestUsertest",
-		AgentName:  "baoshantestUsertestUsertestUsertestUsertestUser",
+		AgentName:  "baoshantestUsertestUsertestUsertestUsertestUserbaoshantestUsertestUsertestUsertestUsertestUser",
 		agentCode:  "",
 		nickName:   "testUser",
 		imageIndex: 16,
@@ -47,7 +47,7 @@ func main() {
 
 	util.StartWorks(10, 10000)
 
-	for i := 1; i < 10; i++ {
+	for i := 1; i < 1000000; i++ {
 		index := i
 		util.PushJob(func() {
 			userData.Uid = int32(index)
