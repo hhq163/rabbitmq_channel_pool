@@ -19,8 +19,9 @@ type PlayerData struct {
 
 func main() {
 	base.LogInit("Info", 1000)
+
 	channelPool := new(impl.ChannelPool)
-	channelPool.InitPool("amqp://test:testpassword@192.168.31.230:5672/test")
+	channelPool.InitPool("amqp://admin:2626hhq@192.168.1.29:5672/test")
 
 	userData := &PlayerData{
 		Uid:       1,
@@ -49,9 +50,9 @@ func main() {
 			Priority:        0,              // 0-9
 		}
 
-		errs := channelPool.Publish("TestExchange", "testKey", false, false, false, msg)
+		errs := channelPool.Publish("test", "testKey", false, false, false, msg)
 		if errs != nil {
-			base.Log.Error("Failed to publish a message i:", i, "errinfo:", err.Error())
+			base.Log.Error("Failed to publish a message i:", i, "errinfo:", errs.Error())
 		}
 		sendCount++
 	}
