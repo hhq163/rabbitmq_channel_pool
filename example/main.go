@@ -47,7 +47,7 @@ func main() {
 
 	util.StartWorks(10, 10000)
 
-	for i := 1; i < 10; i++ {
+	for i := 1; i < 1000000; i++ {
 		index := i
 		util.PushJob(func() {
 			userData.Uid = int32(index)
@@ -59,7 +59,7 @@ func main() {
 				base.Log.Fatal("Encode error")
 				return
 			}
-			base.Log.Info("datas.len=", datas.Len())
+			// base.Log.Info("datas.len=", datas.Len())
 			msg := amqp.Publishing{
 				Headers:         amqp.Table{},
 				ContentType:     "text/plain",
