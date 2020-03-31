@@ -14,9 +14,16 @@ import (
 )
 
 type PlayerData struct {
-	Uid       int32
-	UserName  string
-	AgentName string
+	Uid        int32
+	UserName   string
+	AgentName  string
+	agentCode  string
+	nickName   string
+	imageIndex uint8
+	rank       uint8
+	hallType   uint8
+	loginType  uint8
+	ipInfo     string
 }
 
 func main() {
@@ -26,15 +33,21 @@ func main() {
 	channelPool.InitPool("amqp://admin:2626hhq@192.168.1.29:5672/")
 
 	userData := &PlayerData{
-		Uid:       1,
-		UserName:  "testUser",
-		AgentName: "baoshan",
+		Uid:        1,
+		UserName:   "testUsertestUsertestUsertestUsertestUsertestUsertestUsertest",
+		AgentName:  "baoshantestUsertestUsertestUsertestUsertestUser",
+		agentCode:  "",
+		nickName:   "testUser",
+		imageIndex: 16,
+		rank:       2,
+		hallType:   3,
+		loginType:  3,
+		ipInfo:     "192.168.0.32",
 	}
 
 	util.StartWorks(10, 10000)
 
-	sendCount := 0
-	for i := 1; i < 100000; i++ {
+	for i := 1; i < 10; i++ {
 		index := i
 		util.PushJob(func() {
 			userData.Uid = int32(index)
@@ -46,6 +59,7 @@ func main() {
 				base.Log.Fatal("Encode error")
 				return
 			}
+			base.Log.Info("datas.len=", datas.Len())
 			msg := amqp.Publishing{
 				Headers:         amqp.Table{},
 				ContentType:     "text/plain",
@@ -61,7 +75,6 @@ func main() {
 			}
 		})
 
-		sendCount++
 	}
 
 	fmt.Println("Publish finished")
