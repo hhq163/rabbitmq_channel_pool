@@ -41,7 +41,7 @@ func main() {
 		HalfOpenSuccess:   3,
 	}
 	breakers := breaker.InitBreakers([]int32{1000}, options)
-	cpBreak = breakers.GetBreaker(1000)
+	cpBreaker = breakers.GetBreaker(1000)
 
 	channelPool := new(impl.ChannelPool)
 	channelPool.InitPool("amqp://admin:2626hhq@192.168.1.29:5672/")
@@ -82,13 +82,13 @@ func main() {
 				DeliveryMode:    amqp.Transient, // 1=non-persistent, 2=persistent
 				Priority:        0,              // 0-9
 			}
-			if cpBreak.IsAllowed() { //是否被熔断
+			if cpBreaker.IsAllowed() { //是否被熔断
 				errs := channelPool.Publish("LogicToWork", "testKey", false, false, false, msg)
 				if errs != nil {
-					cpBreak.Fail()
+					cpBreaker.Fail()
 					base.Log.Error("Failed to publish a message i:", i, "errinfo:", err.Error())
 				} else {
-					cpBreak.Succeed()
+					cpBreaker.Succeed()
 				}
 			}
 
