@@ -78,6 +78,8 @@ func main() {
 				} else {
 					cpBreaker.Succeed()
 				}
+			} else {
+				base.Log.Info("channelPool breaked")
 			}
 
 		})
