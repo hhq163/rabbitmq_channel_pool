@@ -8,7 +8,6 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/hhq163/breaker"
 	"github.com/hhq163/rabbitmq_channel_pool/base"
 	"github.com/hhq163/rabbitmq_channel_pool/impl"
 	"github.com/hhq163/rabbitmq_channel_pool/util"
