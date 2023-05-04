@@ -7,9 +7,9 @@ import (
 	"os"
 	"os/signal"
 
+	"example/base"
+	"example/impl"
 	"github.com/hhq163/kk_core/util"
-	"github.com/hhq163/rabbitmq_channel_pool/base"
-	"github.com/hhq163/rabbitmq_channel_pool/impl"
 	"github.com/streadway/amqp"
 )
 

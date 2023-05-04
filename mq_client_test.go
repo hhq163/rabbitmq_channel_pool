@@ -1,4 +1,4 @@
-package DawnMicroHub
+package rabbitmq_channel_pool
 
 import (
 	"fmt"
@@ -11,15 +11,26 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hhq163/kk_core/util"
+	"github.com/hhq163/logger"
 	"github.com/streadway/amqp"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/reflect/protoreflect"
-	"skygitlab.q1oa.com/root/DawnCore/util"
-	"skygitlab.q1oa.com/root/DawnMicroHub/proto/netmsg"
 )
 
+type PlayerData struct {
+	Uid        int32
+	UserName   string
+	AgentName  string
+	agentCode  string
+	nickName   string
+	imageIndex uint8
+	rank       uint8
+	hallType   uint8
+	loginType  uint8
+	ipInfo     string
+}
+
 const (
-	CONSUME_EXCHANGE = "GameToWebH"
+	CONSUME_EXCHANGE = "testExchange"
 )
 
 var ActReqCountAll uint64    //总操作数
@@ -30,40 +41,25 @@ var ActReqTimePoint int64    //开始时间
 var ActLastTimePoint int64   //最后响应时间
 var QpsMax float64           //qps最大值
 
-var cfg *util.LogConfig
+var cfg *logger.LogConfig
 
 var mqClient *RabbitMQClient
 var clientPool *RabbitMQClientPool
-var Log *util.Logger
+var Log *logger.Logger
 var srcSSID SSrvID
 var dstsrvID SSrvID
 
 //发布测试
 func TestPuslish(t *testing.T) {
 	var err error
-	cfg = util.NewDevelopmentConfig(5, 1)
+	cfg := logger.NewDevelopmentConfig()
+	cfg.Encoding = "json"
+	cfg.OutputPaths = append(cfg.OutputPaths, "access_log.txt")
+	Log = logger.NewMyLogger(cfg)
 
-	cfg.FileName = util.GetExecpath() + "/logs/test.html"
-	cfg.MaxSize = 500 * 1024 * 1024 //单位为字节
-
-	Log, err = util.NewLog(cfg)
-	if err != nil {
-		log.Fatal("util.NewLog err=", err.Error())
-	}
-	srcSSID = SSrvID{
-		SvrNo:     1,
-		SvrType:   5,
-		ClusterID: 1,
-	}
-	dstsrvID = SSrvID{
-		SvrNo:     1,
-		SvrType:   0,
-		ClusterID: 1,
-	}
-
-	user := url.QueryEscape("gouser")
-	password := url.QueryEscape("DEIro34KE@#$")
-	urlStr := fmt.Sprintf("amqp://%s:%s@172.16.124.61:5672/Y", user, password)
+	user := url.QueryEscape("test")
+	password := url.QueryEscape("testpass")
+	urlStr := fmt.Sprintf("amqp://%s:%s@127.0.0.1:5672/Y", user, password)
 	Log.Debug("urlStr=", urlStr)
 
 	mqcfg := &MqConfig{
@@ -255,55 +251,46 @@ func (h *MqTestHandler) HandleMessage(p interface{}) (ret int) {
 
 		// log.Println("HandleMessage(), m=", m.MsgID)
 
-		rsp := &netmsg.TMSG_AGENT_RUNCMD_RSP{}
-		err = proto.Unmarshal(m.Data, rsp)
-		if err != nil {
-			log.Println("err=", err.Error())
-			return
-		}
-		// log.Println("rsp.CmdRecordSn=", rsp.CmdRecordSn)
 		atomic.AddUint64(&ActRspSucessCount, 1)
 		atomic.StoreInt64(&(ActLastTimePoint), time.Now().UnixNano())
-
-		// now := time.Now().Unix()
-		// SendOneMsg("GameToWebH", "hequnKey", now)
 	}
 	return
 }
 
 //发送一条消息
 func SendOneMsg(exchange, routingKey string, index int64) {
-
-	rsp := &netmsg.TMSG_AGENT_RUNCMD_RSP{
-		Ret:         uint32(netmsg.ERRCODE_ERR_NOERROR),
-		Message:     "doing",
-		CmdTarget:   fmt.Sprintf("%d:%d:%d", dstsrvID.ClusterID, dstsrvID.SvrType, dstsrvID.SvrNo), //clusterID:svrType:svrNo
-		CmdSn:       123456,
-		CmdName:     "Proc doning",
-		CmdRecordSn: uint64(index),
-		CmdObj:      []string{fmt.Sprintf("is a test index=%d", index)},
-		StatusCode:  netmsg.CMDSTATE_CODE_EXECING,
+	userData := &PlayerData{
+		Uid:        1,
+		UserName:   "testUsertestUsertestUsertestUsertestUsertestUsertestUsertest",
+		AgentName:  "baoshantestUsertestUsertestUsertestUsertestUserbaoshantestUsertestUsertestUsertestUsertestUser",
+		agentCode:  "",
+		nickName:   "testUser",
+		imageIndex: 16,
+		rank:       2,
+		hallType:   3,
+		loginType:  3,
+		ipInfo:     "192.168.0.32",
 	}
 
-	MqSendMsg(exchange, routingKey, rsp, uint16(netmsg.NETMSGID_MSG_AGENT_RUNCMD_RSP))
+	MqSendMsg(exchange, routingKey, userData)
 
 }
 
 //发送消息
-func MqSendMsg(exchange, routingKey string, m protoreflect.ProtoMessage, msgID uint16) error {
-	p := genMsg(srcSSID, dstsrvID, msgID, m)
-	data, err := EncodeTcp(p)
+func MqSendMsg(exchange, routingKey string, m *PlayerData) error {
+	datas := new(bytes.Buffer)
+	enc := gob.NewEncoder(datas)
+	err := enc.Encode(userData)
 	if err != nil {
-		// log.Println("EncodeTcp(), err=", err.Error())
-		Log.Error("EncodeTcp(), err=", err.Error())
-		return err
+		base.Log.Fatal("Encode error")
+		return
 	}
 
 	msg := amqp.Publishing{
 		Headers:         amqp.Table{},
 		ContentType:     "text/plain",
 		ContentEncoding: "",
-		Body:            data,
+		Body:            datas.Bytes(),
 		DeliveryMode:    amqp.Transient, // 1=non-persistent, 2=persistent
 		Priority:        0,              // 0-9
 	}
@@ -316,22 +303,6 @@ func MqSendMsg(exchange, routingKey string, m protoreflect.ProtoMessage, msgID u
 		Log.Debug("send success")
 	}
 	return nil
-}
-
-func genMsg(srcSvr, dstSvr SSrvID, msgID uint16, m protoreflect.ProtoMessage) *Packet {
-	data, err := proto.Marshal(m)
-	if err != nil {
-		Log.Error("proto.Marshal err=", err.Error())
-		return nil
-	}
-
-	p := &Packet{}
-	p.SrcSvr = srcSvr
-	p.DestSvr = dstSvr
-	p.MsgID = msgID
-	p.Data = data
-
-	return p
 }
 
 func printQpsInfo() {

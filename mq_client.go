@@ -1,4 +1,4 @@
-package DawnMicroHub
+package rabbitmq_channel_pool
 
 import (
 	"fmt"
