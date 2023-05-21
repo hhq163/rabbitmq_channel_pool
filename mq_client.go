@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/hhq163/kk_core/util"
 	"github.com/streadway/amqp"
-	"skygitlab.q1oa.com/root/DawnCore/util"
 
 	"github.com/hhq163/logger"
 )
