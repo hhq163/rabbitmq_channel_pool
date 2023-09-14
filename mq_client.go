@@ -511,7 +511,7 @@ type RabbitMQClientPool struct {
  * @return {*}
  */
 
-func NewMQClientPool(cfg *MqConfig, h IMqHandler, log *logger.Logger) (*RabbitMQClientPool, error) {
+func NewMQClientPool(cfg *MqConfig, h IMqHandler, log logger.Logger) (*RabbitMQClientPool, error) {
 	rand.Seed(time.Now().Unix())
 	var err error
 	if cfg.AmqpUrl == "" || log == nil {
