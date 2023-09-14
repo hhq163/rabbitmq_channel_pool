@@ -58,7 +58,7 @@ type RabbitMQClient struct {
 	connNotify    chan *amqp.Error
 	channelNotify chan *amqp.Error //channel产生的错误
 
-	log *logger.Logger
+	log logger.Logger
 }
 
 /**
@@ -68,7 +68,7 @@ type RabbitMQClient struct {
  * @param {*logger.Logger} log 日志组件
  * @return {*}
  */
-func NewMQClient(cfg *MqConfig, h IMqHandler, log *logger.Logger) (*RabbitMQClient, error) {
+func NewMQClient(cfg *MqConfig, h IMqHandler, log logger.Logger) (*RabbitMQClient, error) {
 	rand.Seed(time.Now().Unix())
 	if cfg.AmqpUrl == "" || log == nil {
 		return nil, fmt.Errorf("param is illegal cfg.AmqpUrl=%s,log == nil", cfg.AmqpUrl)

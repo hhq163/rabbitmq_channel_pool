@@ -65,7 +65,7 @@ func TestPuslish(t *testing.T) {
 		ChannelNum: 10,
 	}
 
-	mqClient, err = NewMQClient(mqcfg, nil, &Log)
+	mqClient, err = NewMQClient(mqcfg, nil, Log)
 	if err != nil {
 		Log.Debug("err=", err.Error())
 	}
@@ -128,7 +128,7 @@ func TestConsumer(t *testing.T) {
 	ActReqTimePoint = time.Now().UnixNano()
 	go printQpsInfo()
 
-	mqClient, err = NewMQClient(mqcfg, &mqHander, &Log)
+	mqClient, err = NewMQClient(mqcfg, &mqHander, Log)
 	if err != nil {
 		Log.Debug("err=", err.Error())
 	}
@@ -191,7 +191,7 @@ func TestPoolConsumer(t *testing.T) {
 	ActReqTimePoint = time.Now().UnixNano()
 	go printQpsInfo()
 
-	clientPool, err = NewMQClientPool(mqcfg, &mqHander, &Log)
+	clientPool, err = NewMQClientPool(mqcfg, &mqHander, Log)
 	if err != nil {
 		Log.Debug("err=", err.Error())
 	}
