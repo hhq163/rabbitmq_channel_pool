@@ -7,7 +7,7 @@ replace github.com/hhq163/rabbitmq_channel_pool => ../../rabbitmq_channel_pool
 require github.com/streadway/amqp v1.0.0
 
 require (
-	github.com/hhq163/logger v1.0.4-0.20200925075435-2b4e66e561d3 // indirect
+	github.com/hhq163/logger v1.0.5
 	github.com/natefinch/lumberjack v2.0.0+incompatible // indirect
 	github.com/opentracing/opentracing-go v1.1.0 // indirect
 	github.com/smallnest/chanx v1.0.0 // indirect
