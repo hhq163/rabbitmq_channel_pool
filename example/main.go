@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
+	"net/url"
 	"os"
 	"os/signal"
 
-	"example/base"
-	"example/impl"
+	"github.com/hhq163/kk_core/base"
 	"github.com/hhq163/kk_core/util"
+	"github.com/hhq163/logger"
+	"github.com/hhq163/rabbitmq_channel_pool"
 	"github.com/streadway/amqp"
 )
 
@@ -26,13 +28,16 @@ type PlayerData struct {
 	ipInfo     string
 }
 
-func main() {
-	base.LogInit("Info", 1000)
-	base.BreakerInit()
-	cpBreaker := base.GetBreaker(1000)
+var Log logger.Logger
 
-	channelPool := new(impl.ChannelPool)
-	channelPool.InitPool("amqp://admin:2626hhq@192.168.1.29:5672/")
+var Workers *util.OrderWorkers
+
+func main() {
+
+	cfg := logger.NewDevelopmentConfig()
+	cfg.Filename = "./logs/access_log.txt"
+	cfg.MaxSize = 500 //单位为M
+	Log = logger.NewCuttingLogger(cfg)
 
 	userData := &PlayerData{
 		Uid:        1,
@@ -47,11 +52,38 @@ func main() {
 		ipInfo:     "192.168.0.32",
 	}
 
-	util.StartWorks(10, 10000)
+	Workers = util.NewOrderWorkers(8, 200, &Log)
+
+	user := url.QueryEscape("gouser")
+	password := url.QueryEscape("DEIro34KE@#$")
+	urlStr := fmt.Sprintf("amqp://%s:%s@172.18.2.85:5672/Y", user, password)
+	Log.Debug("urlStr=", urlStr)
+
+	mqcfg := &rabbitmq_channel_pool.MqConfig{
+		AmqpUrl:    urlStr,
+		ChannelNum: 10,
+	}
+
+	mqClient, err := rabbitmq_channel_pool.NewMQClient(mqcfg, nil, &Log)
+	if err != nil {
+		Log.Debug("err=", err.Error())
+	}
+
+	// now := time.Now().Unix()
+	// ticker := time.NewTicker(1 * time.Second)
+	// for {
+	// 	<-ticker.C
+
+	// 	for i := 0; i < 1000; i++ {
+	// 		t.Log("SendOneMsg i=", i)
+	// 		SendOneMsg(CONSUME_EXCHANGE, "hequnKey", now+int64(i))
+	// 	}
+
+	// }
 
 	for i := 1; i < 1000000; i++ {
 		index := i
-		util.PushJob(func() {
+		util.Push(1, func() {
 			userData.Uid = int32(index)
 
 			datas := new(bytes.Buffer)
@@ -70,17 +102,12 @@ func main() {
 				DeliveryMode:    amqp.Transient, // 1=non-persistent, 2=persistent
 				Priority:        0,              // 0-9
 			}
-			if cpBreaker.IsAllowed() { //是否被熔断
-				errs := channelPool.Publish("LogicToWork", "testKey", false, false, false, msg)
-				if errs != nil {
-					cpBreaker.Fail()
-					base.Log.Error("Failed to publish a message i:", i, "errinfo:", err.Error())
-				} else {
-					cpBreaker.Succeed()
-				}
-			} else {
-				base.Log.Info("channelPool breaked")
+			errs := mqClient.Publish("LogicToWork", "testKey", false, false, false, msg)
+			if errs != nil {
+				base.Log.Error("Failed to publish a message i:", i, "errinfo:", err.Error())
 			}
+
+			base.Log.Info("Publish success")
 
 		})
 
@@ -92,7 +119,5 @@ func main() {
 	signal.Notify(c, os.Interrupt, os.Kill)
 	sig := <-c
 	base.Log.Info("Process closing down signal:", sig)
-
-	util.StopWorkers()
 
 }

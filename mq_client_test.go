@@ -1,6 +1,8 @@
 package rabbitmq_channel_pool
 
 import (
+	"bytes"
+	"encoding/gob"
 	"fmt"
 	"log"
 	"net/url"
@@ -11,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hhq163/kk_core/util"
+	"github.com/hhq163/kk_core/base"
 	"github.com/hhq163/logger"
 	"github.com/streadway/amqp"
 )
@@ -41,13 +43,9 @@ var ActReqTimePoint int64    //开始时间
 var ActLastTimePoint int64   //最后响应时间
 var QpsMax float64           //qps最大值
 
-var cfg *logger.LogConfig
-
 var mqClient *RabbitMQClient
 var clientPool *RabbitMQClientPool
-var Log *logger.Logger
-var srcSSID SSrvID
-var dstsrvID SSrvID
+var Log logger.Logger
 
 //发布测试
 func TestPuslish(t *testing.T) {
@@ -57,9 +55,9 @@ func TestPuslish(t *testing.T) {
 	cfg.OutputPaths = append(cfg.OutputPaths, "access_log.txt")
 	Log = logger.NewMyLogger(cfg)
 
-	user := url.QueryEscape("test")
-	password := url.QueryEscape("testpass")
-	urlStr := fmt.Sprintf("amqp://%s:%s@127.0.0.1:5672/Y", user, password)
+	user := url.QueryEscape("gouser")
+	password := url.QueryEscape("DEIro34KE@#$")
+	urlStr := fmt.Sprintf("amqp://%s:%s@172.18.2.85:5672/q1autoops", user, password)
 	Log.Debug("urlStr=", urlStr)
 
 	mqcfg := &MqConfig{
@@ -67,7 +65,7 @@ func TestPuslish(t *testing.T) {
 		ChannelNum: 10,
 	}
 
-	mqClient, err = NewMQClient(mqcfg, nil, Log)
+	mqClient, err = NewMQClient(mqcfg, nil, &Log)
 	if err != nil {
 		Log.Debug("err=", err.Error())
 	}
@@ -77,9 +75,9 @@ func TestPuslish(t *testing.T) {
 	for {
 		<-ticker.C
 
-		for i := 0; i < 1000; i++ {
+		for i := 0; i < 10; i++ {
 			t.Log("SendOneMsg i=", i)
-			SendOneMsg(CONSUME_EXCHANGE, "hequnKey", now+int64(i))
+			SendOneMsg("AutoOpsEvent", "75f3942cd7719cfa0f4d9ab271e638ab1c61ab83f0a30095d3a526be240778c5", now+int64(i))
 		}
 
 	}
@@ -89,30 +87,17 @@ func TestPuslish(t *testing.T) {
 //channel池消费测试
 func TestConsumer(t *testing.T) {
 	var err error
-	cfg = util.NewDevelopmentConfig(5, 1)
+	cfg := logger.NewDevelopmentConfig()
 
-	cfg.FileName = util.GetExecpath() + "/logs/test.html"
+	cfg.OutputPaths = append(cfg.OutputPaths, "channepool_consumer.txt")
 	cfg.MaxSize = 500 * 1024 * 1024 //单位为字节
 
-	Log, err = util.NewLog(cfg)
-	if err != nil {
-		log.Fatal("util.NewLog err=", err.Error())
-	}
-	srcSSID = SSrvID{
-		SvrNo:     1,
-		SvrType:   5,
-		ClusterID: 1,
-	}
-	dstsrvID = SSrvID{
-		SvrNo:     1,
-		SvrType:   0,
-		ClusterID: 1,
-	}
+	Log = logger.NewMyLogger(cfg)
 
 	var mqHander MqTestHandler
 	user := url.QueryEscape("gouser")
 	password := url.QueryEscape("DEIro34KE@#$")
-	urlStr := fmt.Sprintf("amqp://%s:%s@172.16.124.61:5672/Y", user, password)
+	urlStr := fmt.Sprintf("amqp://%s:%s@172.18.2.85:5672/Y", user, password)
 	Log.Debug("urlStr=", urlStr)
 
 	queueName1 := "WebToGameHequn1"
@@ -143,7 +128,7 @@ func TestConsumer(t *testing.T) {
 	ActReqTimePoint = time.Now().UnixNano()
 	go printQpsInfo()
 
-	mqClient, err = NewMQClient(mqcfg, &mqHander, Log)
+	mqClient, err = NewMQClient(mqcfg, &mqHander, &Log)
 	if err != nil {
 		Log.Debug("err=", err.Error())
 	}
@@ -164,25 +149,12 @@ LOOP:
 //连接池消费测试
 func TestPoolConsumer(t *testing.T) {
 	var err error
-	cfg = util.NewDevelopmentConfig(5, 1)
+	cfg := logger.NewDevelopmentConfig()
 
-	cfg.FileName = util.GetExecpath() + "/logs/test.html"
+	cfg.OutputPaths = append(cfg.OutputPaths, "connpool_consumer.txt")
 	cfg.MaxSize = 500 * 1024 * 1024 //单位为字节
 
-	Log, err = util.NewLog(cfg)
-	if err != nil {
-		log.Fatal("util.NewLog err=", err.Error())
-	}
-	srcSSID = SSrvID{
-		SvrNo:     1,
-		SvrType:   5,
-		ClusterID: 1,
-	}
-	dstsrvID = SSrvID{
-		SvrNo:     1,
-		SvrType:   0,
-		ClusterID: 1,
-	}
+	Log = logger.NewMyLogger(cfg)
 
 	var mqHander MqTestHandler
 	user := url.QueryEscape("gouser")
@@ -219,7 +191,7 @@ func TestPoolConsumer(t *testing.T) {
 	ActReqTimePoint = time.Now().UnixNano()
 	go printQpsInfo()
 
-	clientPool, err = NewMQClientPool(mqcfg, &mqHander, Log)
+	clientPool, err = NewMQClientPool(mqcfg, &mqHander, &Log)
 	if err != nil {
 		Log.Debug("err=", err.Error())
 	}
@@ -243,13 +215,7 @@ type MqTestHandler struct {
 //MQ业务处理
 func (h *MqTestHandler) HandleMessage(p interface{}) (ret int) {
 	if msg, ok := p.(amqp.Delivery); ok {
-		m, err := DecodeTcp(msg.Body)
-		if err != nil {
-			log.Print("DecodeTcp err=", err.Error())
-			return
-		}
-
-		// log.Println("HandleMessage(), m=", m.MsgID)
+		log.Println("HandleMessage(), len(msg.Body)=", len(msg.Body))
 
 		atomic.AddUint64(&ActRspSucessCount, 1)
 		atomic.StoreInt64(&(ActLastTimePoint), time.Now().UnixNano())
